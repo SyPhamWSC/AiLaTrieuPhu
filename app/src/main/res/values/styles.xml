@@ -1,0 +1,11 @@
+<resources>
+
+    <style name="Material.NoActionBar.Fullscreen" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+</resources>
