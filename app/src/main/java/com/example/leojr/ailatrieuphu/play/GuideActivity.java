@@ -38,7 +38,8 @@ public class GuideActivity extends AppCompatActivity {
         });
         btnSound.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {;
+            public void onClick(View v) {
+                btnSound.setBackgroundResource(R.drawable.music_off);
             }
         });
 
