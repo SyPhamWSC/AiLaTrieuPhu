@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/message_box"
+    android:weightSum="20"
+    >
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#0000EE"
+        android:alpha="0.5"
+        android:text="Thông báo"
+        android:textSize="30dp"
+        android:gravity="center"
+        android:textColor="#FFFF00"
+        android:textStyle="bold"
+        android:layout_weight="1"
+        />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="18"
+        android:text="Bạn đã sẵn sàng?"
+        android:gravity="center"
+        android:textSize="30dp"
+        />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        >
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No"
+            android:id="@+id/btn_no_ready"
+            android:background="#0000EE"
+            />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Yes"
+            android:id="@+id/btn_yes_ready"
+            android:background="#0000EE"
+            android:layout_toRightOf="@+id/btn_no_ready"
+            android:layout_marginLeft="20dp"
+            />
+    </RelativeLayout>
+</LinearLayout>

@@ -31,7 +31,7 @@ public class GuideActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent mIntent = new Intent(GuideActivity.this,PlayActivity.class);
+                Intent mIntent = new Intent(GuideActivity.this,ReadyActivity.class);
                 startActivity(mIntent);
                 GuideActivity.this.finish();
             }

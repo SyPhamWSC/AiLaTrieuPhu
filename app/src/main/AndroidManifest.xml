@@ -17,6 +17,8 @@
         </activity>
         <activity android:name=".play.GuideActivity"/>
         <activity android:name=".play.PlayActivity"/>
+        <activity android:name=".play.ReadyActivity"/>
+        <activity android:name=".play.GameOverActivity"/>
     </application>
 
 </manifest>
