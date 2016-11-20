@@ -1,42 +1,37 @@
 package com.example.leojr.ailatrieuphu.play;
 
 import android.app.Activity;
-
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
-
+import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import com.example.leojr.ailatrieuphu.R;
 import com.example.leojr.ailatrieuphu.database.DatabaseManager;
 import com.example.leojr.ailatrieuphu.database.Question;
 import com.example.leojr.ailatrieuphu.dialog.CallMeDialog;
 import com.example.leojr.ailatrieuphu.dialog.HelpFromViewersDialog;
 import com.example.leojr.ailatrieuphu.dialog.I5050Dialog;
-
 import java.io.IOException;
 import java.util.List;
 
 
-
-
-/**
- * Created by Leo Jr on 12/10/2016.
- */
-
 public class PlayActivity extends Activity implements View.OnClickListener{
 
+    private static final String TAG ="PlayActivity" ;
     private static final int UPDATE_TIME_PLAY = 0;
     private static final int SHOW_DIAGLOG_OVERTIME = 1 ;
+    private static final int ANSWER_TRUE = 1;
+    private static final int ANSWER_WRONG = 2;
+    private static final int ANIMATION = 3;
+
     private TextView tvLevel;
     private TextView tvQuestion;
     private TextView tvCaseA;
@@ -44,19 +39,19 @@ public class PlayActivity extends Activity implements View.OnClickListener{
     private TextView tvCaseC;
     private TextView tvcaseD;
     private TextView tvTime;
-    private int trueCase;
-    private int level = 0;
-    private boolean isPaused= false;
-    private boolean correct = false;
-    private int yourChoice;
-    private int score;
-    private boolean isClick = false;
-    private int timePlay =  30;
     private Button btnPhone;
     private Button btn50_50;
     private Button btnPeople;
 
+    private int trueCase;
+    private int level = 0;
+    private int yourChoice;
+
+    private Animation blinkAnswer;
+    private Animation blinkAnswerFalse;
+    private Handler handler;
     List<Question> questionList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +82,43 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         btnPhone = (Button) findViewById(R.id.btn_phone);
         btn50_50 = (Button) findViewById(R.id.btn_50_50);
         btnPeople = (Button) findViewById(R.id.btn_people);
+        blinkAnswer = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.blink);
+        blinkAnswerFalse = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.blink_false);
+        blinkAnswer.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                setNewQuestion(level);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        blinkAnswerFalse.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
+                startActivity(mIntent);
+                PlayActivity.this.finish();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
         btnPhone.setOnClickListener(this);
         btn50_50.setOnClickListener(this);
         btnPeople.setOnClickListener(this);
@@ -100,13 +132,25 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         questionList = db.get15Question();
     }
     private void initComponent(){
-
-       // processTime();
+       handler = new Handler(){
+           @Override
+           public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case ANSWER_TRUE:
+                        level += 1;
+                        sleepTime(3000);
+                        animationTrueAnswer(trueCase);
+                        break;
+                    case ANSWER_WRONG:
+                        sleepTime(3000);
+                        animationFalseAnswer(trueCase,yourChoice);
+                        break;
+                }
+           }
+       };
     }
 
     public void setNewQuestion(int level){
-
-        //processTimePlay();
         //Level trong khoảng 0-14 nên hiển thị tên câu hỏi phải cộng thêm 1;
         int levels = level +1;
         //Chuyển đổi sang dạng String để setText cho textView hiển thị câu hỏi
@@ -127,54 +171,48 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         tvCaseB.setBackgroundResource(R.drawable.answer);
         tvCaseC.setBackgroundResource(R.drawable.answer);
         tvcaseD.setBackgroundResource(R.drawable.answer);
-        isClick = false;
         tvCaseA.setClickable(true);
         tvCaseB.setClickable(true);
         tvCaseC.setClickable(true);
         tvcaseD.setClickable(true);
-        timePlay = 30;
 
     }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()){
 
-            //click vào câu trả lời A.
             case R.id.tv_caseA:
                 tvCaseA.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 1;
-                isClick = true;
                 tvCaseB.setClickable(false);
                 tvCaseC.setClickable(false);
                 tvcaseD.setClickable(false);
-                processAnswer(yourChoice,trueCase);
+                processAnswer();
                 break;
             case R.id.tv_caseB:
                 tvCaseB.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 2;
-                isClick = true;
                 tvCaseA.setClickable(false);
                 tvCaseC.setClickable(false);
                 tvcaseD.setClickable(false);
-                processAnswer(yourChoice,trueCase);
+                processAnswer();
                 break;
             case R.id.tv_caseC:
                 tvCaseC.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 3;
-                isClick = true;
                 tvCaseB.setClickable(false);
                 tvCaseA.setClickable(false);
                 tvcaseD.setClickable(false);
-                processAnswer(yourChoice,trueCase);
+                processAnswer();
                 break;
             case R.id.tv_caseD:
                 tvcaseD.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 4;
-                isClick = true;
                 tvCaseB.setClickable(false);
                 tvCaseC.setClickable(false);
                 tvCaseA.setClickable(false);
-                processAnswer(yourChoice,trueCase);
+                processAnswer();
                 break;
             case R.id.btn_phone:
                 CallMeDialog callMe = new CallMeDialog(PlayActivity.this, trueCase);
@@ -208,6 +246,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 
 
     }
+
     private void help5050(int trueCase){
         switch (trueCase){
             case 1:
@@ -237,216 +276,210 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         }
 
     }
-    private boolean checkAnswer(int yourChoice, int trueCase){
-        if(yourChoice == trueCase){
-            return true;
-        }
-        return false;
-    }
-    private void processAnswer(final int yourChoice, final int trueCase){
-        MyAsyncTaskProcessPlay m = new MyAsyncTaskProcessPlay();
-        m.execute();
-    }
 
-
-
-    class MyAsyncTaskProcessPlay extends AsyncTask<Integer, Integer, Void> {
-
-
-       @Override
-       protected Void doInBackground(Integer... params) {
-           level++;
-           publishProgress(level);
-           return null;
-       }
-
-       @Override
-       protected void onProgressUpdate(Integer... values) {
-           super.onProgressUpdate(values);
-           int levels = values[0];
-           try {
-               Thread.sleep(3000);
-           } catch (InterruptedException e) {
-               e.printStackTrace();
-           }
-           //doi mau dap an dung
-
-           changeColorCorrectAnswer();
-           try {
-               Thread.sleep(1000);
-           } catch (InterruptedException e) {
-               e.printStackTrace();
-           }
-           if (checkAnswer(yourChoice, trueCase)) {
-
-               setNewQuestion(levels);
-               Toast.makeText(PlayActivity.this, "You have got " + checkScore(levels), Toast.LENGTH_LONG).show();
-           } else {
-
-               Toast.makeText(PlayActivity.this, "Sai rồi, Ngu vãi", Toast.LENGTH_LONG).show();
-               try {
-                   Thread.sleep(1000);
-               } catch (InterruptedException e) {
-                   e.printStackTrace();
-               }
-               Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
-               mIntent.putExtra("score", checkScore(levels - 1));
-               startActivity(mIntent);
-               PlayActivity.this.finish();
-           }
-
-       }
-
-       @Override
-       protected void onPostExecute(Void aVoid) {
-           super.onPostExecute(aVoid);
-       }
-
-       private String checkScore(int level) {
-           String score = null;
-           switch (level) {
-               case 0:
-                   score = "0";
-                   break;
-               case 1:
-                   score = "200000";
-                   break;
-               case 2:
-                   score = "400000";
-                   break;
-               case 3:
-                   score = "600000";
-                   break;
-               case 4:
-                   score = "1000000";
-                   break;
-               case 5:
-                   score = "2000000";
-                   break;
-               case 6:
-                   score = "3000000";
-                   break;
-               case 7:
-                   score = "6000000";
-                   break;
-               case 8:
-                   score = "10000000";
-                   break;
-               case 9:
-                   score = "14000000";
-                   break;
-               case 10:
-                   score = "22000000";
-                   break;
-               case 11:
-                   score = "30000000";
-                   break;
-               case 12:
-                   score = "40000000";
-                   break;
-               case 13:
-                   score = "60000000";
-                   break;
-               case 14:
-                   score = "85000000";
-                   break;
-               case 15:
-                   score = "150000000";
-                   break;
-           }
-           return score;
-       }
-
-   }
-    private String checkScore(int level) {
-        String score = null;
-        switch (level) {
-            case 0:
-                score = "0";
-                break;
-            case 1:
-                score = "200000";
-                break;
-            case 2:
-                score = "400000";
-                break;
-            case 3:
-                score = "600000";
-                break;
-            case 4:
-                score = "1000000";
-                break;
-            case 5:
-                score = "2000000";
-                break;
-            case 6:
-                score = "3000000";
-                break;
-            case 7:
-                score = "6000000";
-                break;
-            case 8:
-                score = "10000000";
-                break;
-            case 9:
-                score = "14000000";
-                break;
-            case 10:
-                score = "22000000";
-                break;
-            case 11:
-                score = "30000000";
-                break;
-            case 12:
-                score = "40000000";
-                break;
-            case 13:
-                score = "60000000";
-                break;
-            case 14:
-                score = "85000000";
-                break;
-            case 15:
-                score = "150000000";
-                break;
-        }
-        return score;
-    }
-    private void setTime(int levels){
-        while(!isClick){
-            timePlay--;
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            tvTime.setText(Integer.toString(timePlay));
-        }
-        if(timePlay ==0){
-            Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
-            mIntent.putExtra("score", checkScore(levels - 1));
-            startActivity(mIntent);
-            PlayActivity.this.finish();
-        }
-
-    }
-    private void changeColorCorrectAnswer() {
-        switch (trueCase) {
+    private void animationTrueAnswer(int trueAnswer){
+        switch (trueAnswer){
             case 1:
                 tvCaseA.setBackgroundResource(R.drawable.correct_answer);
-                Toast.makeText(PlayActivity.this, "Sao khong doi mau", Toast.LENGTH_SHORT).show();
+                tvCaseA.setAnimation(blinkAnswer);
+                tvCaseA.startAnimation(blinkAnswer);
+                break;
             case 2:
                 tvCaseB.setBackgroundResource(R.drawable.correct_answer);
-                Toast.makeText(PlayActivity.this, "Sao khong doi mau", Toast.LENGTH_SHORT).show();
+                tvCaseB.setAnimation(blinkAnswer);
+                tvCaseB.startAnimation(blinkAnswer);
+                break;
             case 3:
                 tvCaseC.setBackgroundResource(R.drawable.correct_answer);
-                Toast.makeText(PlayActivity.this, "Sao khong doi mau", Toast.LENGTH_SHORT).show();
+                tvCaseC.setAnimation(blinkAnswer);
+                tvCaseC.startAnimation(blinkAnswer);
+                break;
             case 4:
                 tvcaseD.setBackgroundResource(R.drawable.correct_answer);
-                Toast.makeText(PlayActivity.this, "Sao khong doi mau", Toast.LENGTH_SHORT).show();
+                tvcaseD.setAnimation(blinkAnswer);
+                tvcaseD.startAnimation(blinkAnswer);
+                break;
+
+        }
+    }
+    private void animationFalseAnswer(int trueAnswer,int yourAnswer){
+        switch (trueAnswer){
+            case 1:
+                tvCaseA.setBackgroundResource(R.drawable.correct_answer);
+                tvCaseA.setAnimation(blinkAnswerFalse);
+                tvCaseA.startAnimation(blinkAnswerFalse);
+                break;
+            case 2:
+                tvCaseB.setBackgroundResource(R.drawable.correct_answer);
+                tvCaseB.setAnimation(blinkAnswerFalse);
+                tvCaseB.startAnimation(blinkAnswerFalse);
+                break;
+            case 3:
+                tvCaseC.setBackgroundResource(R.drawable.correct_answer);
+                tvCaseC.setAnimation(blinkAnswerFalse);
+                tvCaseC.startAnimation(blinkAnswerFalse);
+                break;
+            case 4:
+                tvcaseD.setBackgroundResource(R.drawable.correct_answer);
+                tvcaseD.setAnimation(blinkAnswerFalse);
+                tvcaseD.startAnimation(blinkAnswerFalse);
+                break;
+        }
+        switch (yourAnswer){
+            case 1:
+                tvCaseA.setBackgroundResource(R.drawable.wrong_answer);
+                break;
+            case 2:
+                tvCaseB.setBackgroundResource(R.drawable.wrong_answer);
+                break;
+            case 3:
+                tvCaseC.setBackgroundResource(R.drawable.wrong_answer);
+                break;
+            case 4:
+                tvcaseD.setBackgroundResource(R.drawable.wrong_answer);
+                break;
         }
     }
 
+    private void processAnswer(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(yourChoice == trueCase){
+                    Message msg = new Message();
+                    msg.what = ANSWER_TRUE;
+                    msg.setTarget(handler);
+                    msg.sendToTarget();
+                }else {
+                    Message msg = new Message();
+                    msg.what = ANSWER_WRONG;
+                    msg.setTarget(handler);
+                    msg.sendToTarget();
+                }
+            }
+        }).start();
+    }
+    private void sleepTime(int mili){
+       SystemClock.sleep(mili);
+    }
 
-
+//    private void processAnswer(final int yourChoice, final int trueCase){
+//        MyAsyncTaskProcessPlay m = new MyAsyncTaskProcessPlay();
+//        m.execute();
+//    }
+    //    class MyAsyncTaskProcessPlay extends AsyncTask<Integer, Integer, Void> {
+//
+//
+//       @Override
+//       protected Void doInBackground(Integer... params) {
+//           level++;
+//           publishProgress(level);
+//           return null;
+//       }
+//
+//       @Override
+//       protected void onProgressUpdate(Integer... values) {
+//           super.onProgressUpdate(values);
+//           int levels = values[0];
+//           try {
+//               Thread.sleep(3000);
+//           } catch (InterruptedException e) {
+//               e.printStackTrace();
+//           }
+//
+//           try {
+//               Thread.sleep(1000);
+//           } catch (InterruptedException e) {
+//               e.printStackTrace();
+//           }
+//           if (checkAnswer(yourChoice, trueCase)) {
+//               animationTrueCase(trueCase);
+//               try {
+//                   Thread.sleep(1000);
+//               } catch (InterruptedException e) {
+//                   e.printStackTrace();
+//               }
+//               setNewQuestion(levels);
+//               Toast.makeText(PlayActivity.this, "You have got " + checkScore(levels), Toast.LENGTH_LONG).show();
+//           } else {
+//               animationTrueCase(trueCase);
+//               try {
+//                   Thread.sleep(1000);
+//               } catch (InterruptedException e) {
+//                   e.printStackTrace();
+//               }
+//               Toast.makeText(PlayActivity.this, "Sai rồi, Ngu vãi", Toast.LENGTH_LONG).show();
+//               try {
+//                   Thread.sleep(1000);
+//               } catch (InterruptedException e) {
+//                   e.printStackTrace();
+//               }
+//               Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
+//               mIntent.putExtra("score", checkScore(levels - 1));
+//               startActivity(mIntent);
+//               PlayActivity.this.finish();
+//           }
+//
+//       }
+//
+//       @Override
+//       protected void onPostExecute(Void aVoid) {
+//           super.onPostExecute(aVoid);
+//       }
+//
+//       private String checkScore(int level) {
+//           String score = null;
+//           switch (level) {
+//               case 0:
+//                   score = "0";
+//                   break;
+//               case 1:
+//                   score = "200000";
+//                   break;
+//               case 2:
+//                   score = "400000";
+//                   break;
+//               case 3:
+//                   score = "600000";
+//                   break;
+//               case 4:
+//                   score = "1000000";
+//                   break;
+//               case 5:
+//                   score = "2000000";
+//                   break;
+//               case 6:
+//                   score = "3000000";
+//                   break;
+//               case 7:
+//                   score = "6000000";
+//                   break;
+//               case 8:
+//                   score = "10000000";
+//                   break;
+//               case 9:
+//                   score = "14000000";
+//                   break;
+//               case 10:
+//                   score = "22000000";
+//                   break;
+//               case 11:
+//                   score = "30000000";
+//                   break;
+//               case 12:
+//                   score = "40000000";
+//                   break;
+//               case 13:
+//                   score = "60000000";
+//                   break;
+//               case 14:
+//                   score = "85000000";
+//                   break;
+//               case 15:
+//                   score = "150000000";
+//                   break;
+//           }
+//           return score;
+//       }
+//}
 }

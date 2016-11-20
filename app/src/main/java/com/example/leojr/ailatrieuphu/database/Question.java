@@ -15,11 +15,7 @@ public class Question {
     private String level;
 
 
-    public Question(){
-
-    }
-
-    public Question(String content, String caseA, String caseB, String caseC, String caseD, int trueCase, String level){
+    Question(String content, String caseA, String caseB, String caseC, String caseD, int trueCase, String level){
         this.content = content;
         this.caseA = caseA;
         this.caseB = caseB;
@@ -41,40 +37,20 @@ public class Question {
         return caseA;
     }
 
-    public void setCaseA(String caseA) {
-        this.caseA = caseA;
-    }
-
     public String getCaseB() {
         return caseB;
-    }
-
-    public void setCaseB(String caseB) {
-        this.caseB = caseB;
     }
 
     public String getCaseC() {
         return caseC;
     }
 
-    public void setCaseC(String caseC) {
-        this.caseC = caseC;
-    }
-
     public String getCaseD() {
         return caseD;
     }
 
-    public void setCaseD(String caseD) {
-        this.caseD = caseD;
-    }
-
     public int getTrueCase() {
         return trueCase;
-    }
-
-    public void setTrueCase(int trueCase) {
-        this.trueCase = trueCase;
     }
 
     public int getId() {
@@ -85,11 +61,4 @@ public class Question {
         this.id = id;
     }
 
-    public String getLevel() {
-        return level;
-    }
-
-    public void setLevel(String level) {
-        this.level = level;
-    }
 }

@@ -19,21 +19,6 @@ import com.example.leojr.ailatrieuphu.dialog.ReadyDialog;
 
 public class ReadyActivity extends Activity implements IReadyDialog, View.OnClickListener{
 
-    private TextView tvMoney1;
-    private TextView tvMoney2;
-    private TextView tvMoney3;
-    private TextView tvMoney4;
-    private TextView tvMoney5;
-    private TextView tvMoney6;
-    private TextView tvMoney7;
-    private TextView tvMoney8;
-    private TextView tvMoney9;
-    private TextView tvMoney10;
-    private TextView tvMoney11;
-    private TextView tvMoney12;
-    private TextView tvMoney13;
-    private TextView tvMoney14;
-    private TextView tvMoney15;
     private Button btnSkip;
     ReadyDialog readyDialog;
 
