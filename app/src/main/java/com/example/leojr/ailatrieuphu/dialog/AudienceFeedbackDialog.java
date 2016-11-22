@@ -8,13 +8,10 @@ import android.widget.ImageView;
 
 import com.example.leojr.ailatrieuphu.R;
 
-/**
- * Created by Leo Jr on 19/10/2016.
- */
-
-public class AudienceFeedbackDialog extends Dialog implements View.OnClickListener{
+public class AudienceFeedbackDialog extends Dialog implements View.OnClickListener {
     ImageView img;
     int trueCase;
+
     public AudienceFeedbackDialog(Context context, int trueCase) {
         super(context);
         this.trueCase = trueCase;
@@ -26,7 +23,7 @@ public class AudienceFeedbackDialog extends Dialog implements View.OnClickListen
         setContentView(R.layout.adience_feedback_dialog);
         findViewById(R.id.btn_ok_feedback).setOnClickListener(this);
         img = (ImageView) findViewById(R.id.img_feedback);
-        switch (trueCase){
+        switch (trueCase) {
             case 1:
                 img.setImageResource(R.drawable.audience_a);
                 break;
@@ -45,7 +42,7 @@ public class AudienceFeedbackDialog extends Dialog implements View.OnClickListen
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.btn_ok_feedback:
                 dismiss();
                 break;

@@ -8,25 +8,25 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.leojr.ailatrieuphu.R;
+
 /**
  * Created by Leo Jr on 16/10/2016.
  */
 
-public class GameOverActivity extends Activity implements View.OnClickListener{
+public class GameOverActivity extends Activity implements View.OnClickListener {
 
-    private TextView tvMess;
-    private Button btnRestart;
-    private Button btnQuit;
+    private static final String SCORE = "your_score";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.game_over_layout);
         Intent intent = getIntent();
-        String score = intent.getStringExtra("score");
-        tvMess = (TextView) findViewById(R.id.tv_mess_game_over);
-        tvMess.setText("You have got "+ score+ "VND");
-        btnQuit = (Button) findViewById(R.id.btn_quit_game);
-        btnRestart = (Button) findViewById(R.id.btn_restart);
+        int score = intent.getIntExtra(SCORE,0);
+        TextView tvMess = (TextView) findViewById(R.id.tv_mess_game_over);
+        tvMess.setText("You have got " + score + "VND");
+        Button btnQuit = (Button) findViewById(R.id.btn_quit_game);
+        Button btnRestart = (Button) findViewById(R.id.btn_restart);
         btnRestart.setOnClickListener(this);
         btnQuit.setOnClickListener(this);
 
@@ -34,7 +34,7 @@ public class GameOverActivity extends Activity implements View.OnClickListener{
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.btn_quit_game:
                 System.exit(0);
                 break;

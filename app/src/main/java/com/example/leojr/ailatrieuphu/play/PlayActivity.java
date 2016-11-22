@@ -13,24 +13,29 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.example.leojr.ailatrieuphu.R;
 import com.example.leojr.ailatrieuphu.database.DatabaseManager;
 import com.example.leojr.ailatrieuphu.database.Question;
 import com.example.leojr.ailatrieuphu.dialog.CallMeDialog;
 import com.example.leojr.ailatrieuphu.dialog.HelpFromViewersDialog;
 import com.example.leojr.ailatrieuphu.dialog.I5050Dialog;
+import com.example.leojr.ailatrieuphu.dialog.ITimeOutDialog;
+import com.example.leojr.ailatrieuphu.dialog.TimeOutDialog;
+
 import java.io.IOException;
 import java.util.List;
 
 
-public class PlayActivity extends Activity implements View.OnClickListener{
+public class PlayActivity extends Activity implements View.OnClickListener, ITimeOutDialog {
 
-    private static final String TAG ="PlayActivity" ;
-    private static final int UPDATE_TIME_PLAY = 0;
-    private static final int SHOW_DIAGLOG_OVERTIME = 1 ;
+    private static final String TAG = "PlayActivity";
     private static final int ANSWER_TRUE = 1;
     private static final int ANSWER_WRONG = 2;
-    private static final int ANIMATION = 3;
+    private static final int UPDATE_TIME_PLAY = 3;
+    private static final int SHOW_DIALOG_TIME_OUT = 4;
+    private static final String SCORE = "your_score";
 
     private TextView tvLevel;
     private TextView tvQuestion;
@@ -46,6 +51,11 @@ public class PlayActivity extends Activity implements View.OnClickListener{
     private int trueCase;
     private int level = 0;
     private int yourChoice;
+    private int timePlay;
+    private boolean isPause;
+    private int score;
+    private Score mScore;
+    private TimeOutDialog timeOutDialog;
 
     private Animation blinkAnswer;
     private Animation blinkAnswerFalse;
@@ -67,11 +77,10 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         initComponent();
 
 
-
     }
 
     //Ánh xạ và tạo cơ sở dữ liệu cho Game
-    private void initView(){
+    private void initView() {
         tvLevel = (TextView) findViewById(R.id.tv_level);
         tvQuestion = (TextView) findViewById(R.id.tv_question);
         tvCaseA = (TextView) findViewById(R.id.tv_caseA);
@@ -82,8 +91,10 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         btnPhone = (Button) findViewById(R.id.btn_phone);
         btn50_50 = (Button) findViewById(R.id.btn_50_50);
         btnPeople = (Button) findViewById(R.id.btn_people);
-        blinkAnswer = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.blink);
-        blinkAnswerFalse = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.blink_false);
+        timeOutDialog = new TimeOutDialog(this);
+
+        blinkAnswer = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
+        blinkAnswerFalse = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink_false);
         blinkAnswer.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -109,6 +120,9 @@ public class PlayActivity extends Activity implements View.OnClickListener{
             @Override
             public void onAnimationEnd(Animation animation) {
                 Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
+                mScore = new Score(level,false);
+                score = mScore.returnScore();
+                mIntent.putExtra(SCORE,score);
                 startActivity(mIntent);
                 PlayActivity.this.finish();
             }
@@ -123,19 +137,22 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         btn50_50.setOnClickListener(this);
         btnPeople.setOnClickListener(this);
         DatabaseManager db = new DatabaseManager(this);
-        try{
+        try {
             db.createDatabase();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
         questionList = db.get15Question();
     }
-    private void initComponent(){
-       handler = new Handler(){
-           @Override
-           public void handleMessage(Message msg) {
-                switch (msg.what){
+
+    private void initComponent() {
+        timeOutDialog.setCanceledOnTouchOutside(false);
+        timeOutDialog.setiTimeOutDialog(this);
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
                     case ANSWER_TRUE:
                         level += 1;
                         sleepTime(3000);
@@ -143,27 +160,38 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                         break;
                     case ANSWER_WRONG:
                         sleepTime(3000);
-                        animationFalseAnswer(trueCase,yourChoice);
+                        animationFalseAnswer(trueCase, yourChoice);
+                        break;
+                    case UPDATE_TIME_PLAY:
+                        tvTime.setText(msg.arg1 + "");
+                        break;
+                    case SHOW_DIALOG_TIME_OUT:
+                        timeOutDialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT);
+                        timeOutDialog.show();
                         break;
                 }
-           }
-       };
+            }
+        };
     }
 
-    public void setNewQuestion(int level){
+    public void setNewQuestion(int level) {
         //Level trong khoảng 0-14 nên hiển thị tên câu hỏi phải cộng thêm 1;
-        int levels = level +1;
+        int levels = level + 1;
         //Chuyển đổi sang dạng String để setText cho textView hiển thị câu hỏi
         String levelsContent = Integer.toString(levels);
 
+        isPause = false;
         //Set câu hỏi mới
-        tvLevel.setText("Câu "+ levelsContent);
+        tvLevel.setText("Câu " + levelsContent);
         tvTime.setText("30");
         tvQuestion.setText(questionList.get(level).getContent());
-        tvCaseA.setText("A. "+ questionList.get(level).getCaseA());
+        tvCaseA.setText("A. " + questionList.get(level).getCaseA());
         tvCaseB.setText("B. " + questionList.get(level).getCaseB());
-        tvCaseC.setText("C. " +questionList.get(level).getCaseC());
-        tvcaseD.setText("D. "+questionList.get(level).getCaseD());
+        tvCaseC.setText("C. " + questionList.get(level).getCaseC());
+        tvcaseD.setText("D. " + questionList.get(level).getCaseD());
+        tvTime.setText("30");
+        setTimePlay();
         trueCase = questionList.get(level).getTrueCase();
 
         //Set lại backGround cho các textView hiện thị câu trả lời
@@ -180,9 +208,10 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
 
             case R.id.tv_caseA:
+                isPause = true;
                 tvCaseA.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 1;
                 tvCaseB.setClickable(false);
@@ -191,6 +220,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                 processAnswer();
                 break;
             case R.id.tv_caseB:
+                isPause = true;
                 tvCaseB.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 2;
                 tvCaseA.setClickable(false);
@@ -199,6 +229,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                 processAnswer();
                 break;
             case R.id.tv_caseC:
+                isPause = true;
                 tvCaseC.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 3;
                 tvCaseB.setClickable(false);
@@ -207,6 +238,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                 processAnswer();
                 break;
             case R.id.tv_caseD:
+                isPause = true;
                 tvcaseD.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 4;
                 tvCaseB.setClickable(false);
@@ -218,7 +250,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                 CallMeDialog callMe = new CallMeDialog(PlayActivity.this, trueCase);
                 callMe.setCanceledOnTouchOutside(false);
                 callMe.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT);
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
                 callMe.show();
                 btnPhone.setBackgroundResource(R.drawable.icn_telefone_disable);
                 btnPhone.setClickable(false);
@@ -247,8 +279,8 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 
     }
 
-    private void help5050(int trueCase){
-        switch (trueCase){
+    private void help5050(int trueCase) {
+        switch (trueCase) {
             case 1:
                 tvCaseC.setText("");
                 tvcaseD.setText("");
@@ -277,8 +309,8 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 
     }
 
-    private void animationTrueAnswer(int trueAnswer){
-        switch (trueAnswer){
+    private void animationTrueAnswer(int trueAnswer) {
+        switch (trueAnswer) {
             case 1:
                 tvCaseA.setBackgroundResource(R.drawable.correct_answer);
                 tvCaseA.setAnimation(blinkAnswer);
@@ -302,8 +334,9 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 
         }
     }
-    private void animationFalseAnswer(int trueAnswer,int yourAnswer){
-        switch (trueAnswer){
+
+    private void animationFalseAnswer(int trueAnswer, int yourAnswer) {
+        switch (trueAnswer) {
             case 1:
                 tvCaseA.setBackgroundResource(R.drawable.correct_answer);
                 tvCaseA.setAnimation(blinkAnswerFalse);
@@ -325,7 +358,7 @@ public class PlayActivity extends Activity implements View.OnClickListener{
                 tvcaseD.startAnimation(blinkAnswerFalse);
                 break;
         }
-        switch (yourAnswer){
+        switch (yourAnswer) {
             case 1:
                 tvCaseA.setBackgroundResource(R.drawable.wrong_answer);
                 break;
@@ -341,16 +374,16 @@ public class PlayActivity extends Activity implements View.OnClickListener{
         }
     }
 
-    private void processAnswer(){
+    private void processAnswer() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if(yourChoice == trueCase){
+                if (yourChoice == trueCase) {
                     Message msg = new Message();
                     msg.what = ANSWER_TRUE;
                     msg.setTarget(handler);
                     msg.sendToTarget();
-                }else {
+                } else {
                     Message msg = new Message();
                     msg.what = ANSWER_WRONG;
                     msg.setTarget(handler);
@@ -359,8 +392,45 @@ public class PlayActivity extends Activity implements View.OnClickListener{
             }
         }).start();
     }
-    private void sleepTime(int mili){
-       SystemClock.sleep(mili);
+
+    private void sleepTime(int mili) {
+        SystemClock.sleep(mili);
+    }
+
+    private void setTimePlay() {
+        timePlay = 30;
+        isPause = false;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (timePlay > 0 && !isPause) {
+                    sleepTime(1000);
+                    timePlay--;
+                    Message msg = new Message();
+                    msg.what = UPDATE_TIME_PLAY;
+                    msg.arg1 = timePlay;
+                    msg.setTarget(handler);
+                    msg.sendToTarget();
+                }
+                if (!isPause) {
+                    Log.i(TAG, "Time over");
+                    Message msg = new Message();
+                    msg.what = SHOW_DIALOG_TIME_OUT;
+                    msg.setTarget(handler);
+                    msg.sendToTarget();
+                }
+            }
+        }).start();
+    }
+
+    @Override
+    public void setFinish() {
+        Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
+        mScore = new Score(level,false);
+        score = mScore.returnScore();
+        mIntent.putExtra(SCORE, score);
+        startActivity(mIntent);
+        PlayActivity.this.finish();
     }
 
 //    private void processAnswer(final int yourChoice, final int trueCase){
@@ -480,6 +550,5 @@ public class PlayActivity extends Activity implements View.OnClickListener{
 //                   break;
 //           }
 //           return score;
-//       }
-//}
+//
 }

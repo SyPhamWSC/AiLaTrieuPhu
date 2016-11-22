@@ -9,10 +9,6 @@ import android.widget.TextView;
 
 import com.example.leojr.ailatrieuphu.R;
 
-/**
- * Created by Leo Jr on 19/10/2016.
- */
-
 public class CallMeDialog extends Dialog implements View.OnClickListener{
     int trueCase;
     public CallMeDialog(Context context, int trueCase) {

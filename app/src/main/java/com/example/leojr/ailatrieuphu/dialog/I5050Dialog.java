@@ -8,12 +8,9 @@ import android.widget.Button;
 
 import com.example.leojr.ailatrieuphu.R;
 
-/**
- * Created by Leo Jr on 19/10/2016.
- */
-
-public class I5050Dialog extends Dialog implements View.OnClickListener{
+public class I5050Dialog extends Dialog implements View.OnClickListener {
     private Button btnOK;
+
     public I5050Dialog(Context context) {
         super(context);
         init();
@@ -27,7 +24,7 @@ public class I5050Dialog extends Dialog implements View.OnClickListener{
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.btn_ok_50_50:
                 dismiss();
                 break;

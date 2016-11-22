@@ -15,6 +15,7 @@ public class GuideActivity extends AppCompatActivity {
     private Button btnInfo;
     private Button btnSound;
     private Button btnExit;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,7 +32,7 @@ public class GuideActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent mIntent = new Intent(GuideActivity.this,ReadyActivity.class);
+                Intent mIntent = new Intent(GuideActivity.this, ReadyActivity.class);
                 startActivity(mIntent);
                 GuideActivity.this.finish();
             }
@@ -49,7 +50,6 @@ public class GuideActivity extends AppCompatActivity {
                 System.exit(0);
             }
         });
-
 
 
     }

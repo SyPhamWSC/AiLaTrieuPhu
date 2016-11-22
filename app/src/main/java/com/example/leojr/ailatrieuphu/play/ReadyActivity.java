@@ -17,7 +17,7 @@ import com.example.leojr.ailatrieuphu.dialog.ReadyDialog;
  * Created by Leo Jr on 15/10/2016.
  */
 
-public class ReadyActivity extends Activity implements IReadyDialog, View.OnClickListener{
+public class ReadyActivity extends Activity implements IReadyDialog, View.OnClickListener {
 
     private Button btnSkip;
     ReadyDialog readyDialog;
@@ -34,28 +34,28 @@ public class ReadyActivity extends Activity implements IReadyDialog, View.OnClic
 
     }
 
-    public void init(){
+    public void init() {
         btnSkip = (Button) findViewById(R.id.btn_skip);
 
     }
 
     @Override
     public void setClickBtnNo() {
-        Intent mIntent = new Intent(this,GuideActivity.class);
+        Intent mIntent = new Intent(this, GuideActivity.class);
         startActivity(mIntent);
         this.finish();
     }
 
     @Override
     public void setClickBtnYes() {
-        Intent mIntent = new Intent(this,PlayActivity.class);
+        Intent mIntent = new Intent(this, PlayActivity.class);
         startActivity(mIntent);
         this.finish();
     }
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.btn_skip:
                 readyDialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
                         RelativeLayout.LayoutParams.WRAP_CONTENT);
