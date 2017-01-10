@@ -5,5 +5,5 @@
         android:interpolator="@android:anim/accelerate_interpolator"
         android:duration="200"
         android:repeatMode="reverse"
-        android:repeatCount="6"/>
+        android:repeatCount="10"/>
 </set>

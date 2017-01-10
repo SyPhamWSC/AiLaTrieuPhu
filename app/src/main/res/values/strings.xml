@@ -5,4 +5,13 @@
     <string name="call_me_dialog">Người Thân</string>
     <string name="feed_back">Feed Back</string>
     <string name="game_over">Bạn đã thua</string>
+    <string name="bat_dau">Bắt Đầu</string>
+    <string name="high_score">Điểm cao</string>
+    <string name="info">Thông tin</string>
+    <string name="restart">Chơi lại</string>
+    <string name="quit_game">Thoát game</string>
+    <string name="exit">Bạn muốn thoát?</string>
+    <string name="exit_btn">Yes</string>
+    <string name="no_exit_btn">No</string>
+    <string name="wrong_answer">Trả lời sai</string>
 </resources>

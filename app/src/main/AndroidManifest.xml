@@ -19,6 +19,8 @@
         <activity android:name=".play.PlayActivity"/>
         <activity android:name=".play.ReadyActivity"/>
         <activity android:name=".play.GameOverActivity"/>
+        <activity android:name=".play.LoadingActivity"/>
+        <activity android:name=".play.ListQestionActivity"/>
     </application>
 
 </manifest>

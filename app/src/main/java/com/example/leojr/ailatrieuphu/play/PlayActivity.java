@@ -2,10 +2,12 @@ package com.example.leojr.ailatrieuphu.play;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -19,16 +21,19 @@ import com.example.leojr.ailatrieuphu.R;
 import com.example.leojr.ailatrieuphu.database.DatabaseManager;
 import com.example.leojr.ailatrieuphu.database.Question;
 import com.example.leojr.ailatrieuphu.dialog.CallMeDialog;
+import com.example.leojr.ailatrieuphu.dialog.GameOverDialog;
 import com.example.leojr.ailatrieuphu.dialog.HelpFromViewersDialog;
 import com.example.leojr.ailatrieuphu.dialog.I5050Dialog;
+import com.example.leojr.ailatrieuphu.dialog.IGameOverDialog;
 import com.example.leojr.ailatrieuphu.dialog.ITimeOutDialog;
 import com.example.leojr.ailatrieuphu.dialog.TimeOutDialog;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 
-public class PlayActivity extends Activity implements View.OnClickListener, ITimeOutDialog {
+public class PlayActivity extends Activity implements View.OnClickListener, ITimeOutDialog ,IGameOverDialog{
 
     private static final String TAG = "PlayActivity";
     private static final int ANSWER_TRUE = 1;
@@ -48,6 +53,13 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
     private Button btn50_50;
     private Button btnPeople;
 
+    private MediaPlayer backgroundMusic;
+    private MediaPlayer media;
+    private MediaPlayer choiceMedia;
+    private MediaPlayer answerMedia;
+    private MediaPlayer helpMedia;
+    private MediaPlayer outOfTime;
+
     private int trueCase;
     private int level = 0;
     private int yourChoice;
@@ -56,9 +68,12 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
     private int score;
     private Score mScore;
     private TimeOutDialog timeOutDialog;
+    private GameOverDialog gameOverDialog;
+    private Random random;
 
     private Animation blinkAnswer;
     private Animation blinkAnswerFalse;
+    private Animation blinkWaitAnswer;
     private Handler handler;
     List<Question> questionList;
 
@@ -92,9 +107,11 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
         btn50_50 = (Button) findViewById(R.id.btn_50_50);
         btnPeople = (Button) findViewById(R.id.btn_people);
         timeOutDialog = new TimeOutDialog(this);
+        gameOverDialog = new GameOverDialog(this);
 
         blinkAnswer = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
         blinkAnswerFalse = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink_false);
+        blinkWaitAnswer = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink_wait_answer);
         blinkAnswer.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -103,6 +120,7 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
 
             @Override
             public void onAnimationEnd(Animation animation) {
+
                 setNewQuestion(level);
             }
 
@@ -119,12 +137,16 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
-                mScore = new Score(level,false);
-                score = mScore.returnScore();
-                mIntent.putExtra(SCORE,score);
-                startActivity(mIntent);
-                PlayActivity.this.finish();
+                if(outOfTime != null){
+                    outOfTime.release();
+                    outOfTime = MediaPlayer.create(PlayActivity.this, R.raw.out_of_time);
+                }else {
+                    outOfTime = MediaPlayer.create(PlayActivity.this, R.raw.out_of_time);
+                }
+                outOfTime.start();
+                gameOverDialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+                gameOverDialog.show();
             }
 
             @Override
@@ -132,10 +154,13 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
 
             }
         });
-
         btnPhone.setOnClickListener(this);
         btn50_50.setOnClickListener(this);
         btnPeople.setOnClickListener(this);
+
+        /*
+        Connect to database
+         */
         DatabaseManager db = new DatabaseManager(this);
         try {
             db.createDatabase();
@@ -149,6 +174,7 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
     private void initComponent() {
         timeOutDialog.setCanceledOnTouchOutside(false);
         timeOutDialog.setiTimeOutDialog(this);
+        gameOverDialog.setiGameOverDialog(this);
         handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
@@ -166,6 +192,13 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                         tvTime.setText(msg.arg1 + "");
                         break;
                     case SHOW_DIALOG_TIME_OUT:
+                        if(outOfTime != null){
+                            outOfTime.release();
+                            outOfTime = MediaPlayer.create(PlayActivity.this, R.raw.out_of_time);
+                        }else {
+                            outOfTime = MediaPlayer.create(PlayActivity.this, R.raw.out_of_time);
+                        }
+                        outOfTime.start();
                         timeOutDialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
                                 RelativeLayout.LayoutParams.WRAP_CONTENT);
                         timeOutDialog.show();
@@ -181,8 +214,8 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
         //Chuyển đổi sang dạng String để setText cho textView hiển thị câu hỏi
         String levelsContent = Integer.toString(levels);
 
+        mediaOption(level);
         isPause = false;
-        //Set câu hỏi mới
         tvLevel.setText("Câu " + levelsContent);
         tvTime.setText("30");
         tvQuestion.setText(questionList.get(level).getContent());
@@ -211,8 +244,17 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
         switch (v.getId()) {
 
             case R.id.tv_caseA:
+                if(choiceMedia != null){
+                    choiceMedia.release();
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_a);
+                }
+                else {
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_a);
+                }
+                choiceMedia.start();
                 isPause = true;
                 tvCaseA.setBackgroundResource(R.drawable.your_answer);
+                tvCaseA.setAnimation(blinkWaitAnswer);
                 yourChoice = 1;
                 tvCaseB.setClickable(false);
                 tvCaseC.setClickable(false);
@@ -220,6 +262,14 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 processAnswer();
                 break;
             case R.id.tv_caseB:
+                if(choiceMedia != null){
+                    choiceMedia.release();
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_b);
+                }
+                else {
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_b);
+                }
+                choiceMedia.start();
                 isPause = true;
                 tvCaseB.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 2;
@@ -229,6 +279,14 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 processAnswer();
                 break;
             case R.id.tv_caseC:
+                if(choiceMedia != null){
+                    choiceMedia.release();
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_c);
+                }
+                else {
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_c);
+                }
+                choiceMedia.start();
                 isPause = true;
                 tvCaseC.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 3;
@@ -238,15 +296,32 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 processAnswer();
                 break;
             case R.id.tv_caseD:
+                if(choiceMedia != null){
+                    choiceMedia.release();
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_d);
+                }
+                else {
+                    choiceMedia = MediaPlayer.create(PlayActivity.this, R.raw.ans_d);
+                }
+                choiceMedia.start();
                 isPause = true;
                 tvcaseD.setBackgroundResource(R.drawable.your_answer);
                 yourChoice = 4;
                 tvCaseB.setClickable(false);
                 tvCaseC.setClickable(false);
                 tvCaseA.setClickable(false);
+                tvcaseD.setAnimation(blinkWaitAnswer);
                 processAnswer();
                 break;
             case R.id.btn_phone:
+                if(helpMedia != null){
+                    helpMedia.release();
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.help_callb);
+                }else {
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.help_callb);
+                }
+                helpMedia.start();
+
                 CallMeDialog callMe = new CallMeDialog(PlayActivity.this, trueCase);
                 callMe.setCanceledOnTouchOutside(false);
                 callMe.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -256,6 +331,13 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 btnPhone.setClickable(false);
                 break;
             case R.id.btn_50_50:
+                if(helpMedia != null){
+                    helpMedia.release();
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.sound5050);
+                }else {
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.sound5050);
+                }
+                helpMedia.start();
                 I5050Dialog i5050dialog = new I5050Dialog(PlayActivity.this);
                 i5050dialog.setCanceledOnTouchOutside(false);
                 i5050dialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -266,6 +348,13 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 btn50_50.setClickable(false);
                 break;
             case R.id.btn_people:
+                if(helpMedia != null){
+                    helpMedia.release();
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.khan_gia);
+                }else {
+                    helpMedia = MediaPlayer.create(PlayActivity.this, R.raw.khan_gia);
+                }
+                helpMedia.start();
                 HelpFromViewersDialog helpFromViewersDialog = new HelpFromViewersDialog(PlayActivity.this, trueCase);
                 helpFromViewersDialog.setCanceledOnTouchOutside(false);
                 helpFromViewersDialog.getWindow().setLayout(RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -275,7 +364,6 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 btnPeople.setBackgroundResource(R.drawable.icn_publico_disable);
 
         }
-
 
     }
 
@@ -331,8 +419,41 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 tvcaseD.setAnimation(blinkAnswer);
                 tvcaseD.startAnimation(blinkAnswer);
                 break;
-
         }
+        if(answerMedia != null){
+            answerMedia.release();
+            switch (trueAnswer){
+                case 1:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_a);
+                    break;
+                case 2:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_b);
+                    break;
+                case 3:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_c);
+                    break;
+                case 4:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_d2);
+                    break;
+            }
+        }
+        else {
+            switch (trueAnswer){
+                case 1:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_a);
+                    break;
+                case 2:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_b);
+                    break;
+                case 3:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_c);
+                    break;
+                case 4:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.true_d2);
+                    break;
+            }
+        }
+        answerMedia.start();
     }
 
     private void animationFalseAnswer(int trueAnswer, int yourAnswer) {
@@ -372,6 +493,40 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
                 tvcaseD.setBackgroundResource(R.drawable.wrong_answer);
                 break;
         }
+        if(answerMedia != null){
+            answerMedia.release();
+            switch (trueAnswer){
+                case 1:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_a2);
+                    break;
+                case 2:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_b);
+                    break;
+                case 3:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_c2);
+                    break;
+                case 4:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_d);
+                    break;
+            }
+        }
+        else {
+            switch (trueAnswer){
+                case 1:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_a2);
+                    break;
+                case 2:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_b);
+                    break;
+                case 3:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_c2);
+                    break;
+                case 4:
+                    answerMedia = MediaPlayer.create(PlayActivity.this, R.raw.lose_d);
+                    break;
+            }
+        }
+        answerMedia.start();
     }
 
     private void processAnswer() {
@@ -424,131 +579,144 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
     }
 
     @Override
+    public void setFinishGameOver() {
+        backgroundMusic.release();
+        Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
+        mScore = new Score(level,false);
+        score = mScore.returnScore();
+        mIntent.putExtra(SCORE,score);
+        startActivity(mIntent);
+        media.release();
+        PlayActivity.this.finish();
+    }
+
+    private void mediaOption(int level){
+        if (level == 0){
+            if(level == 0){
+                backgroundMusic= new MediaPlayer().create(PlayActivity.this, R.raw.background_music );
+                backgroundMusic.start();
+                backgroundMusic.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        PlayActivity.this.backgroundMusic = new MediaPlayer().create(PlayActivity.this, R.raw.background_music );
+                        backgroundMusic.setLooping(true);
+                        backgroundMusic.start();
+                    }
+                });
+            }
+            media =  MediaPlayer.create(this, R.raw.ques1);
+            media.start();
+        }else {
+            media.release();
+        }
+        if(level>4){
+           backgroundMusic.release();
+            backgroundMusic = MediaPlayer.create(PlayActivity.this, R.raw.background_music_b);
+            backgroundMusic.start();
+            backgroundMusic.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    PlayActivity.this.backgroundMusic = new MediaPlayer().create(PlayActivity.this, R.raw.background_music_b );
+                    backgroundMusic.setLooping(true);
+                    backgroundMusic.start();
+                }
+            });
+        }
+        random = new Random();
+        int randomNumber = random.nextInt(2);
+        switch (level+1){
+            case 1:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques1);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques1_b);
+                }
+                break;
+            case 2:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques2);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques2_b);
+                }
+                break;
+            case 3:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques3);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques3_b);
+                }
+                break;
+            case 4:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques4);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques4_b);
+                }
+                break;
+            case 5:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques5);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques5_b);
+                }
+                break;
+            case 6:
+                if(randomNumber%2==0) {
+                    media = MediaPlayer.create(this, R.raw.ques6);
+                }
+                break;
+            case 7:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques7);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques7_b);
+                }
+                break;
+            case 8:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques8);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques8_b);
+                }
+                break;
+            case 9:
+                if(randomNumber%2==0){
+                    media = MediaPlayer.create(this, R.raw.ques9);
+                }else {
+                    media = MediaPlayer.create(this, R.raw.ques9_b);
+                }
+                break;
+            case 10:
+                media = MediaPlayer.create(this, R.raw.ques10);
+                break;
+            case 11:
+                media = MediaPlayer.create(this, R.raw.ques11);
+                break;
+            case 12:
+                media = MediaPlayer.create(this, R.raw.ques12);
+                break;
+            case 13:
+                media = MediaPlayer.create(this, R.raw.ques13);
+                break;
+            case 14:
+                media = MediaPlayer.create(this, R.raw.ques14);
+                break;
+            case 15:
+                media = MediaPlayer.create(this, R.raw.ques15);
+                break;
+        }
+        media.start();
+    }
+
+    @Override
     public void setFinish() {
         Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
         mScore = new Score(level,false);
         score = mScore.returnScore();
         mIntent.putExtra(SCORE, score);
+        backgroundMusic.release();
+        media.release();
         startActivity(mIntent);
         PlayActivity.this.finish();
     }
-
-//    private void processAnswer(final int yourChoice, final int trueCase){
-//        MyAsyncTaskProcessPlay m = new MyAsyncTaskProcessPlay();
-//        m.execute();
-//    }
-    //    class MyAsyncTaskProcessPlay extends AsyncTask<Integer, Integer, Void> {
-//
-//
-//       @Override
-//       protected Void doInBackground(Integer... params) {
-//           level++;
-//           publishProgress(level);
-//           return null;
-//       }
-//
-//       @Override
-//       protected void onProgressUpdate(Integer... values) {
-//           super.onProgressUpdate(values);
-//           int levels = values[0];
-//           try {
-//               Thread.sleep(3000);
-//           } catch (InterruptedException e) {
-//               e.printStackTrace();
-//           }
-//
-//           try {
-//               Thread.sleep(1000);
-//           } catch (InterruptedException e) {
-//               e.printStackTrace();
-//           }
-//           if (checkAnswer(yourChoice, trueCase)) {
-//               animationTrueCase(trueCase);
-//               try {
-//                   Thread.sleep(1000);
-//               } catch (InterruptedException e) {
-//                   e.printStackTrace();
-//               }
-//               setNewQuestion(levels);
-//               Toast.makeText(PlayActivity.this, "You have got " + checkScore(levels), Toast.LENGTH_LONG).show();
-//           } else {
-//               animationTrueCase(trueCase);
-//               try {
-//                   Thread.sleep(1000);
-//               } catch (InterruptedException e) {
-//                   e.printStackTrace();
-//               }
-//               Toast.makeText(PlayActivity.this, "Sai rồi, Ngu vãi", Toast.LENGTH_LONG).show();
-//               try {
-//                   Thread.sleep(1000);
-//               } catch (InterruptedException e) {
-//                   e.printStackTrace();
-//               }
-//               Intent mIntent = new Intent(PlayActivity.this, GameOverActivity.class);
-//               mIntent.putExtra("score", checkScore(levels - 1));
-//               startActivity(mIntent);
-//               PlayActivity.this.finish();
-//           }
-//
-//       }
-//
-//       @Override
-//       protected void onPostExecute(Void aVoid) {
-//           super.onPostExecute(aVoid);
-//       }
-//
-//       private String checkScore(int level) {
-//           String score = null;
-//           switch (level) {
-//               case 0:
-//                   score = "0";
-//                   break;
-//               case 1:
-//                   score = "200000";
-//                   break;
-//               case 2:
-//                   score = "400000";
-//                   break;
-//               case 3:
-//                   score = "600000";
-//                   break;
-//               case 4:
-//                   score = "1000000";
-//                   break;
-//               case 5:
-//                   score = "2000000";
-//                   break;
-//               case 6:
-//                   score = "3000000";
-//                   break;
-//               case 7:
-//                   score = "6000000";
-//                   break;
-//               case 8:
-//                   score = "10000000";
-//                   break;
-//               case 9:
-//                   score = "14000000";
-//                   break;
-//               case 10:
-//                   score = "22000000";
-//                   break;
-//               case 11:
-//                   score = "30000000";
-//                   break;
-//               case 12:
-//                   score = "40000000";
-//                   break;
-//               case 13:
-//                   score = "60000000";
-//                   break;
-//               case 14:
-//                   score = "85000000";
-//                   break;
-//               case 15:
-//                   score = "150000000";
-//                   break;
-//           }
-//           return score;
-//
 }

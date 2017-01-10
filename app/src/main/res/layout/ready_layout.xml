@@ -3,7 +3,7 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@mipmap/bg"
-    >
+    android:id="@+id/ready_layout">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -149,17 +149,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        >
+        android:layout_marginTop="20dp">
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bỏ Qua"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="10dp"
-            android:id="@+id/btn_skip"
-            />
     </RelativeLayout>
 
 
