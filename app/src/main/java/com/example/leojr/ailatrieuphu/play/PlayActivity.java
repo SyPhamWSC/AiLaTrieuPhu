@@ -586,7 +586,6 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
         score = mScore.returnScore();
         mIntent.putExtra(SCORE,score);
         startActivity(mIntent);
-        media.release();
         PlayActivity.this.finish();
     }
 
@@ -608,6 +607,7 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
             media.start();
         }else {
             media.release();
+            media = null;
         }
         if(level>4){
            backgroundMusic.release();
@@ -625,87 +625,102 @@ public class PlayActivity extends Activity implements View.OnClickListener, ITim
         random = new Random();
         int randomNumber = random.nextInt(2);
         switch (level+1){
-            case 1:
-                if(randomNumber%2==0){
-                    media = MediaPlayer.create(this, R.raw.ques1);
-                }else {
-                    media = MediaPlayer.create(this, R.raw.ques1_b);
-                }
-                break;
             case 2:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques2);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques2_b);
+                    media.start();
                 }
                 break;
             case 3:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques3);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques3_b);
+                    media.start();
                 }
                 break;
             case 4:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques4);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques4_b);
+                    media.start();
                 }
                 break;
             case 5:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques5);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques5_b);
+                    media.start();
                 }
                 break;
             case 6:
                 if(randomNumber%2==0) {
                     media = MediaPlayer.create(this, R.raw.ques6);
+                    media.start();
                 }
                 break;
             case 7:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques7);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques7_b);
+                    media.start();
                 }
                 break;
             case 8:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques8);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques8_b);
+                    media.start();
                 }
                 break;
             case 9:
                 if(randomNumber%2==0){
                     media = MediaPlayer.create(this, R.raw.ques9);
+                    media.start();
                 }else {
                     media = MediaPlayer.create(this, R.raw.ques9_b);
+                    media.start();
                 }
                 break;
             case 10:
                 media = MediaPlayer.create(this, R.raw.ques10);
+                media.start();
                 break;
             case 11:
                 media = MediaPlayer.create(this, R.raw.ques11);
+                media.start();
                 break;
             case 12:
                 media = MediaPlayer.create(this, R.raw.ques12);
+                media.start();
                 break;
             case 13:
                 media = MediaPlayer.create(this, R.raw.ques13);
+                media.start();
                 break;
             case 14:
                 media = MediaPlayer.create(this, R.raw.ques14);
+                media.start();
                 break;
             case 15:
                 media = MediaPlayer.create(this, R.raw.ques15);
+                media.start();
                 break;
         }
-        media.start();
+
+
     }
 
     @Override
